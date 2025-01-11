@@ -15,8 +15,11 @@ import (
 )
 
 var Version = "dev"
+
 var Logger *log.Logger
 var DebugLogger *log.Logger
+
+var UploadQueue Queue
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -26,6 +29,7 @@ var rootCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 
 		Logger = log.New(os.Stdout, "", 0)
+		UploadQueue = Queue{}
 
 		// Extract the flags
 		versionFlag, err := cmd.Flags().GetBool("version")
@@ -88,9 +92,17 @@ var rootCmd = &cobra.Command{
 		tickerUploader := time.NewTicker(defaultInterval)
 		go func() {
 			for ; ; <-tickerUploader.C {
-				err := UploadFilesToSumo(journalReader.workingDir, receiverURL)
-				if err != nil {
-					Logger.Println(err)
+				fileToUpload := UploadQueue.Next()
+				if fileToUpload != "" {
+					Logger.Printf("Uploading file %s to SumoLogic...\n", fileToUpload)
+					err := uploadFileToSumoSource(fileToUpload, receiverURL)
+					if err != nil {
+						Logger.Println(err)
+						UploadQueue.ReturnFile(fileToUpload)
+						continue
+					}
+				} else {
+					DebugLogger.Println("No files to upload")
 				}
 			}
 		}()

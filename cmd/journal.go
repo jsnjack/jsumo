@@ -43,9 +43,10 @@ const initialCounter = 1000000
 const batchFilenamePrefix = "batch-"
 
 type JournalReader struct {
-	startedAt  time.Time
-	workingDir string // Working directory
-	counter    int    // Used for batching
+	startedAt     time.Time
+	workingDir    string      // Working directory
+	counter       int         // Used for batching
+	readyToUpload chan string // Channel to signal that a batch file is ready to be uploaded
 }
 
 // getJournalctlCmd returns the journalctl command to get logs
@@ -107,7 +108,7 @@ func (j *JournalReader) createBatchFile(data *[]byte) error {
 	startedAt := time.Now()
 
 	j.counter++
-	filename := path.Join(j.workingDir, fmt.Sprintf("%s-%d.zst.jsumo", batchFilenamePrefix, j.counter))
+	filename := path.Join(j.workingDir, fmt.Sprintf("%s%d.zst.jsumo", batchFilenamePrefix, j.counter))
 
 	DebugLogger.Printf("Creating batch file %s...\n", filename)
 	defer func() {
@@ -143,6 +144,9 @@ func (j *JournalReader) createBatchFile(data *[]byte) error {
 	if err != nil {
 		return err
 	}
+
+	// Add the file to the queue
+	UploadQueue.AddFile(filename)
 	return nil
 }
 
@@ -154,13 +158,14 @@ func (j *JournalReader) shouldReadNewLogs() bool {
 		Logger.Printf("Error reading directory %s: %s\n", j.workingDir, err)
 		return false
 	}
+	found := false
 	for _, file := range files {
 		if strings.HasPrefix(file.Name(), batchFilenamePrefix) {
-			DebugLogger.Printf("Found batch file %s. No need to request new logs.\n", file.Name())
-			return false
+			UploadQueue.AddFile(path.Join(j.workingDir, file.Name()))
+			found = true
 		}
 	}
-	return true
+	return !found
 
 }
 
@@ -220,8 +225,9 @@ func NewJournalReader() (*JournalReader, error) {
 		return nil, err
 	}
 	return &JournalReader{
-		startedAt:  time.Now(),
-		workingDir: dir,
-		counter:    initialCounter,
+		startedAt:     time.Now(),
+		workingDir:    dir,
+		counter:       initialCounter,
+		readyToUpload: make(chan string),
 	}, nil
 }

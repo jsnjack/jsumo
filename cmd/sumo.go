@@ -163,6 +163,10 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 	DebugLogger.Println("Uploading file...", filename)
 	file, err := os.ReadFile(filename)
 	if err != nil {
+		if os.IsNotExist(err) {
+			DebugLogger.Printf("File %s not found. Skipping upload.\n", filename)
+			return nil
+		}
 		return err
 	}
 	client := &http.Client{
@@ -191,6 +195,12 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("HTTP error: status %s, %s", resp.Status, string(respBody))
+	}
+
+	DebugLogger.Printf("Removing file %s\n", filename)
+	err = os.Remove(filename)
+	if err != nil {
+		Logger.Println(err)
 	}
 	return nil
 }
