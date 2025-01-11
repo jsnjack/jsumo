@@ -56,7 +56,7 @@ func (j *JournalReader) getJournalctlCmd() (string, error) {
 	if err != nil {
 		// If the cursor file doesn't exist, start logs from the time the program started
 		if os.IsNotExist(err) {
-			return fmt.Sprintf("%s %s\"%s\"", journalctlCmdPrefix, postfixSinceStart, j.startedAt.Format(time.RFC3339)), nil
+			return fmt.Sprintf("%s %s\"%s\"", journalctlCmdPrefix, postfixSinceStart, j.startedAt.Format("2006-01-02 15:04:05")), nil
 		}
 		return "", err
 	}
