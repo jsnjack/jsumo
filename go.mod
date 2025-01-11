@@ -2,7 +2,10 @@ module jsumo
 
 go 1.23.4
 
-require github.com/spf13/cobra v1.8.1
+require (
+	github.com/klauspost/compress v1.17.11
+	github.com/spf13/cobra v1.8.1
+)
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

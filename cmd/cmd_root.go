@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +37,10 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		noSumoFlag, err := cmd.Flags().GetBool("no-sumo")
+		if err != nil {
+			return err
+		}
 		// Handle flags
 		if debugFlag {
 			DebugLogger = log.New(os.Stdout, "", 0)
@@ -49,12 +55,36 @@ var rootCmd = &cobra.Command{
 
 		// Get the receiver URL
 		Logger.Printf("Initializing jsumo %s...\n", Version)
-		_, err = GetReceiverURL()
+		if !noSumoFlag {
+			_, err = GetReceiverURL()
+			if err != nil {
+				return err
+			}
+			Logger.Println("Initialization complete. Ready to forward journalctl logs to SumoLogic.")
+		}
+
+		journalReader, err := NewJournalReader()
 		if err != nil {
 			return err
 		}
-		Logger.Println("Initialization complete. Ready to forward journalctl logs to SumoLogic.")
 
+		// Start reading logs from journalctl every 5 seconds
+		ticker := time.NewTicker(defaultInterval)
+		go func() {
+			for ; ; <-ticker.C {
+				err := journalReader.ReadLogs()
+				if err != nil {
+					Logger.Println(err)
+				}
+			}
+		}()
+
+		// Handle graceful shutdown on Ctrl+C
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		Logger.Println("Shutting down gracefully...")
+		Logger.Println("Shutdown complete.")
 		return nil
 	},
 }
@@ -71,4 +101,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
 	rootCmd.Flags().BoolP("debug", "d", false, "enable debug mode")
+	rootCmd.Flags().BoolP("no-sumo", "", false, "local run, no SumoLogic related code is executed")
 }
