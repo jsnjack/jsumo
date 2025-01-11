@@ -131,6 +131,7 @@ func createSumoHTTPSource(collectorID int, sourceName string) (string, error) {
 	return response.Source.URL, nil
 }
 
+// getSumoHTTPSourceReceiverURLFromName returns the URL of the HTTP source with the given name
 func getSumoHTTPSourceReceiverURLFromName(collectorID int, sourceName string) (string, error) {
 	DebugLogger.Println("Getting HTTP source URL with name:", sourceName)
 	url := sumoRESTAPIURL + "/collectors/" + fmt.Sprint(collectorID) + "/sources"
@@ -151,6 +152,47 @@ func getSumoHTTPSourceReceiverURLFromName(collectorID int, sourceName string) (s
 	}
 
 	return "", fmt.Errorf("source with name %s not found", sourceName)
+}
+
+// uploadFileToSumoSource uploads a file to the SumoLogic source receiver URL
+func uploadFileToSumoSource(filename, receiverURL string) error {
+	startedAt := time.Now()
+	defer func() {
+		DebugLogger.Printf("File uploaded %s, took %s\n", filename, time.Since(startedAt))
+	}()
+	DebugLogger.Println("Uploading file...", filename)
+	file, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{
+		Timeout: 5 * time.Minute,
+	}
+
+	req, err := http.NewRequest("POST", receiverURL, bytes.NewBuffer(file))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Encoding", "zstd")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	DebugLogger.Println("Response status:", resp.Status)
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	DebugLogger.Println("Response body:", string(respBody))
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("HTTP error: status %s, %s", resp.Status, string(respBody))
+	}
+	return nil
 }
 
 // makeRequest makes an HTTP request to the SumoLogic REST API

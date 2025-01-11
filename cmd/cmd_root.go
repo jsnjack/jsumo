@@ -4,6 +4,7 @@ Copyright © 2025 YAUHEN SHULITSKI
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -55,10 +56,14 @@ var rootCmd = &cobra.Command{
 
 		// Get the receiver URL
 		Logger.Printf("Initializing jsumo %s...\n", Version)
+		receiverURL := ""
 		if !noSumoFlag {
-			_, err = GetReceiverURL()
+			receiverURL, err = GetReceiverURL()
 			if err != nil {
 				return err
+			}
+			if receiverURL == "" {
+				return fmt.Errorf("receiver URL is empty")
 			}
 			Logger.Println("Initialization complete. Ready to forward journalctl logs to SumoLogic.")
 		}
@@ -69,10 +74,21 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Start reading logs from journalctl every 5 seconds
-		ticker := time.NewTicker(defaultInterval)
+		tickerJournal := time.NewTicker(defaultInterval)
 		go func() {
-			for ; ; <-ticker.C {
+			for ; ; <-tickerJournal.C {
 				err := journalReader.ReadLogs()
+				if err != nil {
+					Logger.Println(err)
+				}
+			}
+		}()
+
+		// Start uploading files to SumoLogic
+		tickerUploader := time.NewTicker(defaultInterval)
+		go func() {
+			for ; ; <-tickerUploader.C {
+				err := UploadFilesToSumo(journalReader.workingDir, receiverURL)
 				if err != nil {
 					Logger.Println(err)
 				}
