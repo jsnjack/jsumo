@@ -42,6 +42,11 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		receiverURL, err := cmd.Flags().GetString("receiver")
+		if err != nil {
+			return err
+		}
+
 		// Handle flags
 		if debugFlag {
 			DebugLogger = log.New(os.Stdout, "", log.Lmicroseconds|log.Lshortfile)
@@ -55,16 +60,17 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Get the receiver URL
-		Logger.Printf("Initializing jsumo %s...\n", Version)
-		receiverURL := ""
-		receiverURL, err = GetReceiverURL()
-		if err != nil {
-			return err
+		if receiverURL == "" {
+			Logger.Printf("Initializing jsumo %s...\n", Version)
+			receiverURL, err = GetReceiverURL()
+			if err != nil {
+				return err
+			}
 		}
 		if receiverURL == "" {
 			return fmt.Errorf("receiver URL is empty")
 		}
-		Logger.Println("Initialization complete. Ready to forward journalctl logs to SumoLogic.")
+		Logger.Printf("Initialization complete. Ready to forward journalctl logs to %s\n", receiverURL)
 
 		journalReader, err := NewJournalReader()
 		if err != nil {
@@ -123,4 +129,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
 	rootCmd.Flags().BoolP("debug", "d", false, "enable debug mode")
+	rootCmd.Flags().StringP("receiver", "r", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
 }
