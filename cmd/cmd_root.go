@@ -14,12 +14,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "dev"
-
-var Logger *log.Logger
-var DebugLogger *log.Logger
-
-var UploadQueue Queue
+var (
+	Version      = "dev"
+	Logger       *log.Logger
+	DebugLogger  *log.Logger
+	UploadQueue  Queue
+	FlagVersion  bool
+	FlagDebug    bool
+	FlagReceiver string
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -31,46 +34,31 @@ var rootCmd = &cobra.Command{
 		Logger = log.New(os.Stdout, "", log.Lmicroseconds|log.Lshortfile)
 		UploadQueue = Queue{}
 
-		// Extract the flags
-		versionFlag, err := cmd.Flags().GetBool("version")
-		if err != nil {
-			return err
-		}
-
-		debugFlag, err := cmd.Flags().GetBool("debug")
-		if err != nil {
-			return err
-		}
-
-		receiverURL, err := cmd.Flags().GetString("receiver")
-		if err != nil {
-			return err
-		}
-
 		// Handle flags
-		if debugFlag {
+		if FlagDebug {
 			DebugLogger = log.New(os.Stdout, "", log.Lmicroseconds|log.Lshortfile)
 		} else {
 			DebugLogger = log.New(io.Discard, "", 0)
 		}
 
-		if versionFlag {
+		if FlagVersion {
 			Logger.Println(Version)
 			return nil
 		}
 
 		// Get the receiver URL
-		if receiverURL == "" {
+		if FlagReceiver == "" {
 			Logger.Printf("Initializing jsumo %s...\n", Version)
-			receiverURL, err = GetReceiverURL()
+			receiverURL, err := GetReceiverURL()
 			if err != nil {
 				return err
 			}
+			FlagReceiver = receiverURL
 		}
-		if receiverURL == "" {
+		if FlagReceiver == "" {
 			return fmt.Errorf("receiver URL is empty")
 		}
-		Logger.Printf("Initialization complete. Ready to forward journalctl logs to %s\n", receiverURL)
+		Logger.Printf("Initialization complete. Ready to forward journalctl logs to %s\n", FlagReceiver)
 
 		journalReader, err := NewJournalReader()
 		if err != nil {
@@ -95,7 +83,7 @@ var rootCmd = &cobra.Command{
 				fileToUpload := UploadQueue.Next()
 				if fileToUpload != "" {
 					Logger.Printf("Uploading file %s to SumoLogic...\n", fileToUpload)
-					err := uploadFileToSumoSource(fileToUpload, receiverURL)
+					err := uploadFileToSumoSource(fileToUpload, FlagReceiver)
 					if err != nil {
 						Logger.Println(err)
 						UploadQueue.ReturnFile(fileToUpload)
@@ -127,7 +115,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
-	rootCmd.Flags().BoolP("debug", "d", false, "enable debug mode")
-	rootCmd.Flags().StringP("receiver", "r", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
+	rootCmd.PersistentFlags().BoolVarP(&FlagVersion, "version", "v", false, "print version and exit")
+	rootCmd.PersistentFlags().BoolVarP(&FlagDebug, "debug", "d", false, "enable debug mode")
+	rootCmd.PersistentFlags().StringVarP(&FlagReceiver, "receiver", "r", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
 }
