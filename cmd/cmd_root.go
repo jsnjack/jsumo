@@ -135,7 +135,7 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&FlagVersion, "version", "v", false, "print version and exit")
 	rootCmd.PersistentFlags().BoolVarP(&FlagDebug, "debug", "d", false, "enable debug mode")
-	rootCmd.PersistentFlags().StringVarP(&FlagReceiver, "url", "u", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
+	rootCmd.PersistentFlags().StringVarP(&FlagReceiver, "url", "r", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
 	rootCmd.PersistentFlags().DurationVar(&FlagReadInterval, "read-interval", 5*time.Second, "interval to read logs from journalctl")
 	rootCmd.PersistentFlags().DurationVar(&FlagUploadInterval, "upload-interval", 2*time.Second, "interval to upload files to the receiver URL")
 }
