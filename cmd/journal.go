@@ -32,7 +32,7 @@ const cursorFilename = "jsumo-cursor"
 // batchSize is the cutoff size for logs to be sent to SumoLogic, bytes. If the size of the logs
 // is greater than this, they are split into batches
 // Ref: https://help.sumologic.com/docs/send-data/hosted-collectors/http-source/troubleshooting/#request-timeouts
-const batchSize = 900 * 1024 // 500 KB
+const batchSize = 900 * 1024 // 900 KB
 
 // initialCounter is the initial counter for the batch files
 const initialCounter = 1000000
