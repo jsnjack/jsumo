@@ -101,15 +101,19 @@ var rootCmd = &cobra.Command{
 			}
 		}()
 
-		// Handle graceful shutdown on Ctrl+C
+		// Handle graceful shutdown on Ctrl+C or SIGINT signal
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 		<-c
 		Logger.Println(yellow("Shutting down gracefully..."))
 		tickerJournal.Stop()
 		tickerUploader.Stop()
-		for logReadIsActive || uploaderIsActive {
-			Logger.Println(yellow("Waiting for log reading and uploading to finish..."))
+		for logReadIsActive {
+			Logger.Println(yellow("Waiting for log reading to finish..."))
+			time.Sleep(1 * time.Second)
+		}
+		for uploaderIsActive {
+			Logger.Println(yellow("Waiting for file upload to finish..."))
 			time.Sleep(1 * time.Second)
 		}
 		Logger.Println("Shutdown complete.")
