@@ -80,7 +80,7 @@ func (j *JournalReader) writeCursorFile(filename, cursor string) error {
 // ReadLogs reads logs from journalctl and prepares them for sending to SumoLogic
 func (j *JournalReader) ReadLogs() error {
 	startedAt := time.Now()
-	DebugLogger.Println("Reading logs from journalctl...")
+	DebugLogger.Println(green("Reading logs from journalctl..."))
 
 	if !j.shouldReadNewLogs() {
 		return nil
@@ -110,7 +110,7 @@ func (j *JournalReader) createBatchFile(data *[]byte) error {
 	j.counter++
 	filename := path.Join(j.workingDir, fmt.Sprintf("%s%d.zst.jsumo", batchFilenamePrefix, j.counter))
 
-	DebugLogger.Printf("Creating batch file %s...\n", filename)
+	DebugLogger.Println(green(fmt.Sprintf("Creating batch file %s...", filename)))
 	defer func() {
 		DebugLogger.Printf("Batch file created %s, took %s\n", filename, time.Since(startedAt))
 	}()
@@ -155,7 +155,7 @@ func (j *JournalReader) createBatchFile(data *[]byte) error {
 func (j *JournalReader) shouldReadNewLogs() bool {
 	files, err := os.ReadDir(j.workingDir)
 	if err != nil {
-		Logger.Printf("Error reading directory %s: %s\n", j.workingDir, err)
+		Logger.Println(red(fmt.Sprintf("Error reading directory %s: %s\n", j.workingDir, err)))
 		return false
 	}
 	found := false
@@ -171,7 +171,7 @@ func (j *JournalReader) shouldReadNewLogs() bool {
 
 func (j *JournalReader) processLogs(logs *[]byte) error {
 	startedAt := time.Now()
-	DebugLogger.Println("Processing logs...")
+	DebugLogger.Println(green("Processing logs..."))
 	defer func() {
 		j.counter = initialCounter
 		DebugLogger.Printf("Logs processed, took %s\n", time.Since(startedAt))

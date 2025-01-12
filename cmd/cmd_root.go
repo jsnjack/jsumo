@@ -28,6 +28,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "jsumo",
 	Short: "jsumo is a tool to quickly forward your logs from journalctl to SumoLogic",
+	Long:  `jsumo is a tool to quickly forward your logs from journalctl to SumoLogic. It uses journalctl cursor to ensure that no logs are lost.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
@@ -42,7 +43,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if FlagVersion {
-			Logger.Println(Version)
+			fmt.Println(Version)
 			return nil
 		}
 
@@ -71,7 +72,7 @@ var rootCmd = &cobra.Command{
 			for ; ; <-tickerJournal.C {
 				err := journalReader.ReadLogs()
 				if err != nil {
-					Logger.Println(err)
+					Logger.Println(red(err))
 				}
 			}
 		}()
@@ -85,7 +86,7 @@ var rootCmd = &cobra.Command{
 					Logger.Printf("Uploading file %s to SumoLogic...\n", fileToUpload)
 					err := uploadFileToSumoSource(fileToUpload, FlagReceiver)
 					if err != nil {
-						Logger.Println(err)
+						Logger.Println(red(err))
 						UploadQueue.ReturnFile(fileToUpload)
 						continue
 					}
@@ -99,7 +100,7 @@ var rootCmd = &cobra.Command{
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 		<-c
-		Logger.Println("Shutting down gracefully...")
+		Logger.Println(yellow("Shutting down gracefully..."))
 		Logger.Println("Shutdown complete.")
 		return nil
 	},

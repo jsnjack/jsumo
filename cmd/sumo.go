@@ -25,13 +25,13 @@ func GetReceiverURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	DebugLogger.Println("Hostname:", hostname)
+	DebugLogger.Println("System hostname:", hostname)
 
 	// Get the collector ID from the collector name
 	collectorID, err := getSumoCollectorIDFromName(hostname)
 	if err != nil {
 		// Create a new collector if it doesn't exist
-		DebugLogger.Println(err)
+		DebugLogger.Println(red(err))
 		collectorID, err = createSumoCollector(hostname)
 		if err != nil {
 			return "", err
@@ -42,7 +42,7 @@ func GetReceiverURL() (string, error) {
 	receiverURL, err := getSumoHTTPSourceReceiverURLFromName(collectorID, hostname)
 	if err != nil {
 		// Create a new source if it doesn't exist
-		DebugLogger.Println(err)
+		DebugLogger.Println(red(err))
 		receiverURL, err = createSumoHTTPSource(collectorID, hostname)
 		if err != nil {
 			return "", err
@@ -55,7 +55,7 @@ func GetReceiverURL() (string, error) {
 
 // createSumoCollector creates a new collector in SumoLogic
 func createSumoCollector(name string) (int, error) {
-	DebugLogger.Println("Creating collector with name:", name)
+	DebugLogger.Println(green(fmt.Sprintf("Creating collector with name: %s", name)))
 	url := sumoRESTAPIURL + "/collectors"
 	body := map[string]interface{}{
 		"collector": map[string]interface{}{
@@ -79,7 +79,7 @@ func createSumoCollector(name string) (int, error) {
 
 // getSumoCollectorIDFromName returns the ID of the collector with the given name
 func getSumoCollectorIDFromName(name string) (int, error) {
-	DebugLogger.Println("Getting collector ID with name:", name)
+	DebugLogger.Println(green(fmt.Sprintf("Getting collector ID with name: %s", name)))
 	url := sumoRESTAPIURL + "/collectors"
 	respBodyBytes, err := makeRequest("GET", url, nil)
 	if err != nil {
@@ -102,7 +102,7 @@ func getSumoCollectorIDFromName(name string) (int, error) {
 
 // createSumoHTTPSource creates a new HTTP source in SumoLogic
 func createSumoHTTPSource(collectorID int, sourceName string) (string, error) {
-	DebugLogger.Println("Creating HTTP source with name:", sourceName)
+	DebugLogger.Println(green(fmt.Sprintf("Creating HTTP source with name: %s", sourceName)))
 	url := sumoRESTAPIURL + "/collectors/" + fmt.Sprint(collectorID) + "/sources"
 
 	// Ref for unique params: https://help.sumologic.com/docs/send-data/use-json-configure-sources/json-parameters-hosted-sources/#http-source
@@ -133,7 +133,7 @@ func createSumoHTTPSource(collectorID int, sourceName string) (string, error) {
 
 // getSumoHTTPSourceReceiverURLFromName returns the URL of the HTTP source with the given name
 func getSumoHTTPSourceReceiverURLFromName(collectorID int, sourceName string) (string, error) {
-	DebugLogger.Println("Getting HTTP source URL with name:", sourceName)
+	DebugLogger.Println(green(fmt.Sprintf("Getting HTTP source URL with name: %s", sourceName)))
 	url := sumoRESTAPIURL + "/collectors/" + fmt.Sprint(collectorID) + "/sources"
 	respBodyBytes, err := makeRequest("GET", url, nil)
 	if err != nil {
@@ -160,11 +160,11 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 	defer func() {
 		DebugLogger.Printf("File uploaded %s, took %s\n", filename, time.Since(startedAt))
 	}()
-	DebugLogger.Println("Uploading file...", filename)
+	DebugLogger.Println(green(fmt.Sprintf("Uploading file %s ...", filename)))
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			DebugLogger.Printf("File %s not found. Skipping upload.\n", filename)
+			DebugLogger.Println(yellow(fmt.Sprintf("File %s not found. Skipping upload.", filename)))
 			return nil
 		}
 		return err
@@ -179,19 +179,21 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 	}
 	req.Header.Set("Content-Encoding", "zstd")
 
+	DebugLogger.Println(blue(fmt.Sprintf("-- Making request POST %s", receiverURL)))
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	DebugLogger.Println("Response status:", resp.Status)
+	DebugLogger.Println(blue(fmt.Sprintf("Response status: %s", resp.Status)))
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	DebugLogger.Println("Response body:", string(respBody))
+	DebugLogger.Println(blue(fmt.Sprintf("Response body: %s", string(respBody))))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("HTTP error: status %s, %s", resp.Status, string(respBody))
@@ -207,7 +209,7 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 
 // makeRequest makes an HTTP request to the SumoLogic REST API
 func makeRequest(method, url string, body map[string]interface{}) ([]byte, error) {
-	DebugLogger.Println("-- Making request", method, url)
+	DebugLogger.Println(blue(fmt.Sprintf("-- Making request %s %s", method, url)))
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -215,7 +217,7 @@ func makeRequest(method, url string, body map[string]interface{}) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
-	DebugLogger.Println("Request body:", string(jsonBody))
+	DebugLogger.Println(blue(fmt.Sprintf("Request body: %s", string(jsonBody))))
 
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
@@ -241,12 +243,12 @@ func makeRequest(method, url string, body map[string]interface{}) ([]byte, error
 		return nil, err
 	}
 	defer resp.Body.Close()
-	DebugLogger.Println("Response status:", resp.Status)
+	DebugLogger.Println(blue(fmt.Sprintf("Response status: %s", resp.Status)))
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	DebugLogger.Println("Response body:", string(respBody))
+	DebugLogger.Println(blue(fmt.Sprintf("Response body: %s", string(respBody))))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("HTTP error: status %s, %s", resp.Status, string(respBody))
