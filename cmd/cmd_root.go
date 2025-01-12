@@ -68,19 +68,24 @@ var rootCmd = &cobra.Command{
 
 		// Start reading logs from journalctl every 5 seconds
 		tickerJournal := time.NewTicker(journalTickInterval)
+		logReadIsActive := false
 		go func() {
 			for ; ; <-tickerJournal.C {
+				logReadIsActive = true
 				err := journalReader.ReadLogs()
 				if err != nil {
 					Logger.Println(red(err))
 				}
+				logReadIsActive = false
 			}
 		}()
 
 		// Start uploading files to SumoLogic
 		tickerUploader := time.NewTicker(uploaderTickInterval)
+		uploaderIsActive := false
 		go func() {
 			for ; ; <-tickerUploader.C {
+				uploaderIsActive = true
 				fileToUpload := UploadQueue.Next()
 				if fileToUpload != "" {
 					err := uploadFileToSumoSource(fileToUpload, FlagReceiver)
@@ -92,6 +97,7 @@ var rootCmd = &cobra.Command{
 				} else {
 					DebugLogger.Println("No files to upload")
 				}
+				uploaderIsActive = false
 			}
 		}()
 
@@ -100,6 +106,12 @@ var rootCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt)
 		<-c
 		Logger.Println(yellow("Shutting down gracefully..."))
+		tickerJournal.Stop()
+		tickerUploader.Stop()
+		for logReadIsActive || uploaderIsActive {
+			Logger.Println(yellow("Waiting for log reading and uploading to finish..."))
+			time.Sleep(1 * time.Second)
+		}
 		Logger.Println("Shutdown complete.")
 		return nil
 	},
