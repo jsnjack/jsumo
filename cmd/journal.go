@@ -140,7 +140,7 @@ func (j *JournalReader) createBatchFile(data *[]byte) error {
 		return err
 	}
 
-	DebugLogger.Printf("Compression rate: %.2f\n", float64(len(*data))/float64(len(compressedData.Bytes())))
+	DebugLogger.Printf("Compression rate: %.2fx\n", float64(len(*data))/float64(len(compressedData.Bytes())))
 
 	// Write the compressed data to the file
 	err = os.WriteFile(filename, compressedData.Bytes(), 0644)
