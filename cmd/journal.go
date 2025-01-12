@@ -26,12 +26,6 @@ const postfixAfterCursor = "--after-cursor="
 // postfixSinceStart is the postfix of the journalctl command to get logs since the start of the program
 const postfixSinceStart = "--since="
 
-// journalTickInterval is the default interval to get logs from journalctl
-const journalTickInterval = 5 * time.Second
-
-// uploaderTickInterval is the default interval to upload logs to SumoLogic
-const uploaderTickInterval = 2 * time.Second
-
 // cursorFile is the file where the cursor is stored
 const cursorFilename = "jsumo-cursor"
 

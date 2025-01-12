@@ -15,13 +15,15 @@ import (
 )
 
 var (
-	Version      = "dev"
-	Logger       *log.Logger
-	DebugLogger  *log.Logger
-	UploadQueue  Queue
-	FlagVersion  bool
-	FlagDebug    bool
-	FlagReceiver string
+	Version            = "dev"
+	Logger             *log.Logger
+	DebugLogger        *log.Logger
+	UploadQueue        Queue
+	FlagVersion        bool
+	FlagDebug          bool
+	FlagReceiver       string
+	FlagReadInterval   time.Duration
+	FlagUploadInterval time.Duration
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -67,7 +69,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Start reading logs from journalctl every 5 seconds
-		tickerJournal := time.NewTicker(journalTickInterval)
+		tickerJournal := time.NewTicker(FlagReadInterval)
 		logReadIsActive := false
 		go func() {
 			for ; ; <-tickerJournal.C {
@@ -81,7 +83,7 @@ var rootCmd = &cobra.Command{
 		}()
 
 		// Start uploading files to SumoLogic
-		tickerUploader := time.NewTicker(uploaderTickInterval)
+		tickerUploader := time.NewTicker(FlagUploadInterval)
 		uploaderIsActive := false
 		go func() {
 			for ; ; <-tickerUploader.C {
@@ -133,5 +135,7 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&FlagVersion, "version", "v", false, "print version and exit")
 	rootCmd.PersistentFlags().BoolVarP(&FlagDebug, "debug", "d", false, "enable debug mode")
-	rootCmd.PersistentFlags().StringVarP(&FlagReceiver, "receiver", "r", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
+	rootCmd.PersistentFlags().StringVarP(&FlagReceiver, "url", "u", "", "receiver URL. If empty, it will be fetched or created automatically using SumoLogic API")
+	rootCmd.PersistentFlags().DurationVar(&FlagReadInterval, "read-interval", 5*time.Second, "interval to read logs from journalctl")
+	rootCmd.PersistentFlags().DurationVar(&FlagUploadInterval, "upload-interval", 2*time.Second, "interval to upload files to the receiver URL")
 }
