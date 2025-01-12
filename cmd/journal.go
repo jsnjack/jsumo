@@ -197,7 +197,7 @@ func (j *JournalReader) processLogs(logs *[]byte) error {
 	}
 	logsStr := string(*logs)
 	logsSlice := strings.Split(logsStr, "\n")
-	Logger.Printf("Read %d lines\n", len(logsSlice))
+	DebugLogger.Printf("Read %d lines\n", len(logsSlice))
 	if len(logsSlice) < 2 {
 		return fmt.Errorf("at least 2 lines expected, got %d", len(logsSlice))
 	}

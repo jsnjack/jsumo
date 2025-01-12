@@ -203,7 +203,7 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 		return fmt.Errorf("HTTP error: status %s, %s", resp.Status, string(respBody))
 	}
 
-	Logger.Printf("Uploaded %d bytes\n", len(file))
+	DebugLogger.Printf("Uploaded %d bytes\n", len(file))
 
 	DebugLogger.Printf("Removing file %s\n", filename)
 	err = os.Remove(filename)
