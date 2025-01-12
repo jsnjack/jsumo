@@ -155,6 +155,7 @@ func getSumoHTTPSourceReceiverURLFromName(collectorID int, sourceName string) (s
 }
 
 // uploadFileToSumoSource uploads a file to the SumoLogic source receiver URL
+// Ref: https://help.sumologic.com/docs/send-data/hosted-collectors/http-source/logs-metrics/upload-logs/
 func uploadFileToSumoSource(filename, receiverURL string) error {
 	startedAt := time.Now()
 	defer func() {
@@ -178,6 +179,9 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 		return err
 	}
 	req.Header.Set("Content-Encoding", "zstd")
+	if FlagSourceCategory != "" {
+		req.Header.Set("X-Sumo-Category", FlagSourceCategory)
+	}
 
 	DebugLogger.Println(blue(fmt.Sprintf("-- Making request POST %s", receiverURL)))
 
