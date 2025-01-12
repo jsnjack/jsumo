@@ -25,8 +25,11 @@ const postfixAfterCursor = "--after-cursor="
 // postfixSinceStart is the postfix of the journalctl command to get logs since the start of the program
 const postfixSinceStart = "--since="
 
-// defaultInterval is the default interval to get logs from journalctl
-const defaultInterval = 5 * time.Second
+// journalTickInterval is the default interval to get logs from journalctl
+const journalTickInterval = 5 * time.Second
+
+// uploaderTickInterval is the default interval to upload logs to SumoLogic
+const uploaderTickInterval = 7 * time.Second
 
 // cursorFile is the file where the cursor is stored
 const cursorFilename = "jsumo-cursor"
@@ -161,8 +164,12 @@ func (j *JournalReader) shouldReadNewLogs() bool {
 	found := false
 	for _, file := range files {
 		if strings.HasPrefix(file.Name(), batchFilenamePrefix) {
-			UploadQueue.AddFile(path.Join(j.workingDir, file.Name()))
 			found = true
+			// New files are added to the queue just after they are created,
+			// this is mostly to recover from a shutdown
+			if UploadQueue.Len() == 0 {
+				UploadQueue.AddFile(path.Join(j.workingDir, file.Name()))
+			}
 		}
 	}
 	return !found

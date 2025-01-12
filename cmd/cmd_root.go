@@ -67,7 +67,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Start reading logs from journalctl every 5 seconds
-		tickerJournal := time.NewTicker(defaultInterval)
+		tickerJournal := time.NewTicker(journalTickInterval)
 		go func() {
 			for ; ; <-tickerJournal.C {
 				err := journalReader.ReadLogs()
@@ -78,12 +78,12 @@ var rootCmd = &cobra.Command{
 		}()
 
 		// Start uploading files to SumoLogic
-		tickerUploader := time.NewTicker(defaultInterval)
+		tickerUploader := time.NewTicker(uploaderTickInterval)
 		go func() {
 			for ; ; <-tickerUploader.C {
 				fileToUpload := UploadQueue.Next()
 				if fileToUpload != "" {
-					Logger.Printf("Uploading file %s to SumoLogic...\n", fileToUpload)
+					Logger.Printf("Uploading file %s to receiver...\n", fileToUpload)
 					err := uploadFileToSumoSource(fileToUpload, FlagReceiver)
 					if err != nil {
 						Logger.Println(red(err))
