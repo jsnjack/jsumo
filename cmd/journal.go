@@ -29,7 +29,7 @@ const postfixSinceStart = "--since="
 const journalTickInterval = 5 * time.Second
 
 // uploaderTickInterval is the default interval to upload logs to SumoLogic
-const uploaderTickInterval = 7 * time.Second
+const uploaderTickInterval = 2 * time.Second
 
 // cursorFile is the file where the cursor is stored
 const cursorFilename = "jsumo-cursor"
