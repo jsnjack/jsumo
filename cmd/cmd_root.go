@@ -83,7 +83,6 @@ var rootCmd = &cobra.Command{
 			for ; ; <-tickerUploader.C {
 				fileToUpload := UploadQueue.Next()
 				if fileToUpload != "" {
-					Logger.Printf("Uploading file %s to receiver...\n", fileToUpload)
 					err := uploadFileToSumoSource(fileToUpload, FlagReceiver)
 					if err != nil {
 						Logger.Println(red(err))
