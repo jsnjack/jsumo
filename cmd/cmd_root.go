@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 )
 
@@ -50,6 +52,14 @@ var rootCmd = &cobra.Command{
 			fmt.Println(Version)
 			return nil
 		}
+
+		http.Handle("/metrics", promhttp.Handler())
+		go func() {
+			err := http.ListenAndServe(":2112", nil)
+			if err != nil {
+				Logger.Println(red(err))
+			}
+		}()
 
 		// Get the receiver URL
 		if FlagReceiver == "" {
@@ -94,6 +104,7 @@ var rootCmd = &cobra.Command{
 				if fileToUpload != "" {
 					err := uploadFileToSumoSource(fileToUpload, FlagReceiver)
 					if err != nil {
+						metricErrorsWhenSendingToReceiver.Inc()
 						Logger.Println(red(err))
 						UploadQueue.ReturnFile(fileToUpload)
 						continue

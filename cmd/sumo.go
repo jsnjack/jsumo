@@ -192,6 +192,7 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 	defer resp.Body.Close()
 
 	DebugLogger.Println(blue(fmt.Sprintf("Response status: %s", resp.Status)))
+	metricStatusCodesFromReceiver.WithLabelValues(fmt.Sprint(resp.StatusCode)).Inc()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -203,7 +204,8 @@ func uploadFileToSumoSource(filename, receiverURL string) error {
 		return fmt.Errorf("HTTP error: status %s, %s", resp.Status, string(respBody))
 	}
 
-	DebugLogger.Printf("Uploaded %d bytes\n", len(file))
+	Logger.Printf("Uploaded %d bytes\n", len(file))
+	metricBytesSentToReceiver.Add(float64(len(file)))
 
 	DebugLogger.Printf("Removing file %s\n", filename)
 	err = os.Remove(filename)

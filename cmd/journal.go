@@ -32,7 +32,7 @@ const cursorFilename = "jsumo-cursor"
 // batchSize is the cutoff size for logs to be sent to SumoLogic, bytes. If the size of the logs
 // is greater than this, they are split into batches
 // Ref: https://help.sumologic.com/docs/send-data/hosted-collectors/http-source/troubleshooting/#request-timeouts
-const batchSize = 900 * 1024 // 900 KB
+const batchSize = 900 * 1024 // 500 KB
 
 // initialCounter is the initial counter for the batch files
 const initialCounter = 1000000
@@ -197,10 +197,11 @@ func (j *JournalReader) processLogs(logs *[]byte) error {
 	}
 	logsStr := string(*logs)
 	logsSlice := strings.Split(logsStr, "\n")
-	DebugLogger.Printf("Read %d lines\n", len(logsSlice))
+	Logger.Printf("Read %d lines\n", len(logsSlice))
 	if len(logsSlice) < 2 {
 		return fmt.Errorf("at least 2 lines expected, got %d", len(logsSlice))
 	}
+	metricLinesRead.Add(float64(len(logsSlice) - 2))
 	// Last line is the new line, and the second last line is the cursor
 	cursorValue := strings.TrimPrefix(logsSlice[len(logsSlice)-2], "-- cursor: ")
 	buffer := bytes.Buffer{}
