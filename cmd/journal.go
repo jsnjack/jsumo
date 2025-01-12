@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -94,10 +95,12 @@ func (j *JournalReader) ReadLogs() error {
 		return err
 	}
 	cmd := exec.Command("bash", "-c", journalCmd)
+	errBuffer := new(bytes.Buffer)
+	cmd.Stderr = errBuffer
 	DebugLogger.Printf("Running command: %s\n", cmd.String())
 	output, err := cmd.Output()
 	if err != nil {
-		return err
+		return errors.Join(err, errors.New(strings.TrimSpace(errBuffer.String())))
 	}
 	DebugLogger.Printf("Logs read from journalctl, took %s, size %d\n", time.Since(startedAt), len(output))
 	j.processLogs(&output)
