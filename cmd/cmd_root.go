@@ -48,7 +48,7 @@ var rootCmd = &cobra.Command{
 		}
 		// Handle flags
 		if debugFlag {
-			DebugLogger = log.New(os.Stdout, "", 0)
+			DebugLogger = log.New(os.Stdout, "", log.Lmicroseconds|log.Lshortfile)
 		} else {
 			DebugLogger = log.New(io.Discard, "", 0)
 		}
