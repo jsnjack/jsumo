@@ -41,10 +41,9 @@ const initialCounter = 1000000
 const batchFilenamePrefix = "batch-"
 
 type JournalReader struct {
-	startedAt     time.Time
-	workingDir    string      // Working directory
-	counter       int         // Used for batching
-	readyToUpload chan string // Channel to signal that a batch file is ready to be uploaded
+	startedAt  time.Time
+	workingDir string // Working directory
+	counter    int    // Used for batching
 }
 
 // getJournalctlCmd returns the journalctl command to get logs
@@ -243,9 +242,8 @@ func NewJournalReader() (*JournalReader, error) {
 		return nil, err
 	}
 	return &JournalReader{
-		startedAt:     time.Now(),
-		workingDir:    dir,
-		counter:       initialCounter,
-		readyToUpload: make(chan string),
+		startedAt:  time.Now(),
+		workingDir: dir,
+		counter:    initialCounter,
 	}, nil
 }
