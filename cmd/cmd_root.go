@@ -123,15 +123,28 @@ var rootCmd = &cobra.Command{
 		Logger.Println(yellow("Shutting down gracefully..."))
 		tickerJournal.Stop()
 		tickerUploader.Stop()
-		for logReadIsActive {
-			Logger.Println(yellow("Waiting for log reading to finish..."))
-			time.Sleep(1 * time.Second)
+
+		timeout := time.After(30 * time.Second)
+		shutdownComplete := make(chan struct{})
+
+		go func() {
+			for logReadIsActive {
+				Logger.Println(yellow("Waiting for log reading to finish..."))
+				time.Sleep(1 * time.Second)
+			}
+			for uploaderIsActive {
+				Logger.Println(yellow("Waiting for file upload to finish..."))
+				time.Sleep(1 * time.Second)
+			}
+			shutdownComplete <- struct{}{}
+		}()
+
+		select {
+		case <-shutdownComplete:
+			Logger.Println("Shutdown complete.")
+		case <-timeout:
+			Logger.Println(red("Shutdown timed out. Exiting immediately."))
 		}
-		for uploaderIsActive {
-			Logger.Println(yellow("Waiting for file upload to finish..."))
-			time.Sleep(1 * time.Second)
-		}
-		Logger.Println("Shutdown complete.")
 		return nil
 	},
 }
