@@ -28,7 +28,7 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		Logger = log.New(os.Stdout, "", 0)
+		Logger = log.New(os.Stdout, "", log.Lmicroseconds|log.Lshortfile)
 		UploadQueue = Queue{}
 
 		// Extract the flags
@@ -42,10 +42,6 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		noSumoFlag, err := cmd.Flags().GetBool("no-sumo")
-		if err != nil {
-			return err
-		}
 		// Handle flags
 		if debugFlag {
 			DebugLogger = log.New(os.Stdout, "", log.Lmicroseconds|log.Lshortfile)
@@ -61,16 +57,14 @@ var rootCmd = &cobra.Command{
 		// Get the receiver URL
 		Logger.Printf("Initializing jsumo %s...\n", Version)
 		receiverURL := ""
-		if !noSumoFlag {
-			receiverURL, err = GetReceiverURL()
-			if err != nil {
-				return err
-			}
-			if receiverURL == "" {
-				return fmt.Errorf("receiver URL is empty")
-			}
-			Logger.Println("Initialization complete. Ready to forward journalctl logs to SumoLogic.")
+		receiverURL, err = GetReceiverURL()
+		if err != nil {
+			return err
 		}
+		if receiverURL == "" {
+			return fmt.Errorf("receiver URL is empty")
+		}
+		Logger.Println("Initialization complete. Ready to forward journalctl logs to SumoLogic.")
 
 		journalReader, err := NewJournalReader()
 		if err != nil {
@@ -129,5 +123,4 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "print version and exit")
 	rootCmd.Flags().BoolP("debug", "d", false, "enable debug mode")
-	rootCmd.Flags().BoolP("no-sumo", "", false, "local run, no SumoLogic related code is executed")
 }
