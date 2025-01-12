@@ -198,6 +198,9 @@ func (j *JournalReader) processLogs(logs *[]byte) error {
 	logsStr := string(*logs)
 	logsSlice := strings.Split(logsStr, "\n")
 	Logger.Printf("Read %d lines\n", len(logsSlice))
+	if len(logsSlice) < 2 {
+		return fmt.Errorf("at least 2 lines expected, got %d", len(logsSlice))
+	}
 	// Last line is the new line, and the second last line is the cursor
 	cursorValue := strings.TrimPrefix(logsSlice[len(logsSlice)-2], "-- cursor: ")
 	buffer := bytes.Buffer{}
