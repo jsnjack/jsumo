@@ -25,6 +25,7 @@ var (
 	FlagReadInterval   time.Duration
 	FlagUploadInterval time.Duration
 	FlagSourceCategory string
+	FlagGrep           string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -140,4 +141,5 @@ func init() {
 	rootCmd.PersistentFlags().DurationVar(&FlagReadInterval, "read-interval", 5*time.Second, "interval to read logs from journalctl")
 	rootCmd.PersistentFlags().DurationVar(&FlagUploadInterval, "upload-interval", 2*time.Second, "interval to upload files to the receiver URL")
 	rootCmd.PersistentFlags().StringVarP(&FlagSourceCategory, "category", "c", "", "override source category with the given value")
+	rootCmd.PersistentFlags().StringVarP(&FlagGrep, "grep", "g", "", "pass grep pattern to journalctl command")
 }

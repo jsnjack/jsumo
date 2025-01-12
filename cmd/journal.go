@@ -51,14 +51,23 @@ type JournalReader struct {
 func (j *JournalReader) getJournalctlCmd() (string, error) {
 	cursorFile := path.Join(j.workingDir, cursorFilename)
 	cursor, err := j.readCursorFile(cursorFile)
-	if err != nil {
-		// If the cursor file doesn't exist, start logs from the time the program started
-		if os.IsNotExist(err) {
-			return fmt.Sprintf("%s %s\"%s\"", journalctlCmdPrefix, postfixSinceStart, j.startedAt.Format("2006-01-02 15:04:05")), nil
-		}
+	if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}
-	return fmt.Sprintf("%s %s\"%s\"", journalctlCmdPrefix, postfixAfterCursor, cursor), nil
+
+	// Generate the journalctl command
+	cmdStr := fmt.Sprintf("%s %s%q", journalctlCmdPrefix, postfixAfterCursor, cursor)
+
+	// If the cursor file doesn't exist, start logs from the time the program started
+	if os.IsNotExist(err) {
+		cmdStr = fmt.Sprintf("%s %s%q", journalctlCmdPrefix, postfixSinceStart, j.startedAt.Format("2006-01-02 15:04:05"))
+	}
+
+	// Add grep argument to the command if FlagGrep is set
+	if FlagGrep != "" {
+		cmdStr = fmt.Sprintf("%s --grep=%q", cmdStr, FlagGrep)
+	}
+	return cmdStr, nil
 }
 
 // readCursorFile reads the cursor file and returns the cursor
@@ -94,7 +103,11 @@ func (j *JournalReader) ReadLogs() error {
 	DebugLogger.Printf("Running command: %s\n", cmd.String())
 	output, err := cmd.Output()
 	if err != nil {
-		return errors.Join(err, errors.New(strings.TrimSpace(errBuffer.String())))
+		if FlagGrep != "" && errBuffer.Len() == 0 {
+			DebugLogger.Println(yellow("Errored with no output, skipping beacuse grep didn't match any logs"))
+		} else {
+			return errors.Join(err, errors.New(strings.TrimSpace(errBuffer.String())))
+		}
 	}
 	DebugLogger.Printf("Logs read from journalctl, took %s, size %d\n", time.Since(startedAt), len(output))
 	j.processLogs(&output)
